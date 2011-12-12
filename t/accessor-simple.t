@@ -29,4 +29,5 @@ throws_ok( sub{ require AccessorSimpleTest::InvalidDefault }, qr/foo => default 
  # selective import works
  # check that if two objects of the same class are instanciated, that they can hold differnt data (that the data is in the obect and not the namespace)
  # on demand use of has, i.e. in random sub somewhere
+ # strict and warnings are imported into target
  # other?

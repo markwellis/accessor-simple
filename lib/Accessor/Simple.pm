@@ -11,7 +11,9 @@ sub import{
     my $target = caller;
     my $class = shift;
     my $imports = {};
-        
+
+#can we import strict and warnings into $target?
+
     if ( scalar( @_ ) ){
         foreach my $import ( @_ ){
             $imports->{ $import } = 1;
@@ -85,7 +87,6 @@ sub import_has{
             }
             $args{'name'} = $name;
             $accessor_control{ $target }->{ $name } = \%args;
-# has should make accessor for $name with %args
         };
     }
 }
