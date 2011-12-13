@@ -17,6 +17,7 @@ sub import{
     if ( scalar( @_ ) ){
         foreach my $import ( @_ ){
             $imports->{ $import } = 1;
+#shorten this, so it does import_$import($target) and does both in else, check for proper values
         }
     } else {
         $imports->{'new'} = 1;
