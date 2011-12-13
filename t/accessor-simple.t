@@ -60,6 +60,7 @@ throws_ok( sub{ require AccessorSimpleTest::InvalidIs }, qr/'foo => is' is inval
 }
 
 #check all things
+ # required custom init arg
  # builder works ( custom getter/setter? )
  # sub BUILD (others?) works
  # selective import works
