@@ -2,18 +2,16 @@ package Accessor::Simple;
 use strict;
 use warnings;
 
-use Data::Dumper;
 use Exception::Simple;
 
+#add unimport
 sub import{
     my $target = caller;
     my ( $class, $no_new ) = @_;
 
-    $no_new = undef if ( $no_new && ( $no_new ne 'no_new' ) );
-
 #can we import strict and warnings into $target?
     _import_has( $target );
-    _import_new( $target ) if ( !$no_new );
+    _import_new( $target ) if ( $no_new ne 'no_new' );
 
     strict->import;
     warnings->import;
@@ -76,6 +74,7 @@ sub _get_control{
     }
 }
 
+#im not sure this needs to be exported, is it not just available? investigate, look at Test::More or something that does similar
 sub _import_has{
     my $target = shift;
 
