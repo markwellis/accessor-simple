@@ -27,14 +27,14 @@ sub import{
     $accessor_control{ $target } = {};
 
     if ( $imports->{'has'} ){
-        import_has( $target );
+        _import_has( $target );
     }
     if ( $imports->{'new'} ){
-        import_new( $target );
+        _import_new( $target );
     }
 }
 
-sub import_new{
+sub _import_new{
     my $target = shift;
 
     {
@@ -60,7 +60,17 @@ sub import_new{
                     Exception::Simple->throw("$accessor->{'name'} is required");
                 }
 
-                my $value = $args->{ $accessor->{'init_arg'} };
+                my $value;
+                if ( exists( $args->{ $accessor->{'init_arg'} } ) ){
+                    $value = $args->{ $accessor->{'init_arg'} };
+                } elsif( exists( $accessor->{'default'} ) ) {
+                    $value = $accessor->{'default'}->();
+                }
+
+                #set value, ensuring custom setter is used
+                my $name = $accessor->{'name'};
+
+                $self->$name( $value );
             }
             
             return $self;
@@ -68,7 +78,7 @@ sub import_new{
     }
 }
 
-sub import_has{
+sub _import_has{
     my $target = shift;
 
     {
@@ -80,15 +90,61 @@ sub import_has{
                 $args{'init_arg'} = $name;
             }
 
+            if ( !$args{'is'} ){
+                Exception::Simple->throw("'${name} => is' not provided");
+            }
+
+            if (
+                $args{'is'} ne 'ro'
+                && $args{'is'} ne 'rw'
+            ){
+                Exception::Simple->throw("'${name} => is' invalid");
+            }
+
             if (
                 exists( $args{'default'} ) 
                 && ref( $args{'default'} ) ne 'CODE'
             ){
-                Exception::Simple->throw("${name} => default is not a coderef");
+                Exception::Simple->throw("'${name} => default' is not a coderef");
             }
+
             $args{'name'} = $name;
             $accessor_control{ $target }->{ $name } = \%args;
+
+            _mk_accessor( $target, \%args );
         };
+    }
+}
+
+sub _mk_accessor{
+    my ( $target, $args ) = @_;
+
+    my $name = $args->{'name'};
+#these should be overridable in $args...
+    my $setter = sub { $_[0]->{ $name } = $_[1] };
+    my $getter = sub { return shift->{ $name } };
+
+    my $accessor = sub {
+        my ( $self, $value ) = @_;
+
+        if ( 
+            $value 
+            && !$args->{'init'} #this doesnt work!!!
+            && ( $args->{'is'} eq 'ro' )
+        ){
+            Exception::Simple->throw("accessor $args->{'name'} is readonly");
+        }
+    
+        if ( $value ){
+            $setter->( $self, $value );
+        }
+
+        return $getter->( $self );
+    };
+
+    {
+        no strict 'refs';
+        *{"${target}::${name}"} = $accessor;
     }
 }
 

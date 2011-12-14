@@ -17,9 +17,9 @@ use AccessorSimpleTest::RequiredInitArg;
 throws_ok( sub{ AccessorSimpleTest::RequiredInitArg->new }, 'Exception::Simple', 'arg is required');
 
 #there are a compile time errors, which is why they're like this
-throws_ok( sub{ require AccessorSimpleTest::InvalidDefault }, qr/foo => default is not a coderef/);
+throws_ok( sub{ require AccessorSimpleTest::InvalidDefault }, qr/'foo => default' is not a coderef/);
 throws_ok( sub{ require AccessorSimpleTest::NoIs }, qr/'foo => is' not provided/);
-throws_ok( sub{ require AccessorSimpleTest::InvalidIs }, qr/'foo => is' is invalid/);
+throws_ok( sub{ require AccessorSimpleTest::InvalidIs }, qr/'foo => is' invalid/);
 
 {
     use AccessorSimpleTest::Ro;
@@ -67,4 +67,5 @@ throws_ok( sub{ require AccessorSimpleTest::InvalidIs }, qr/'foo => is' is inval
  # check that if two objects of the same class are instanciated, that they can hold differnt data (that the data is in the obect and not the namespace)
  # on demand use of has, i.e. in random sub somewhere
  # strict and warnings are imported into target
+ # custom setter/getter
  # other?
