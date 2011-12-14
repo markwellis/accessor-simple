@@ -5,33 +5,26 @@ use warnings;
 use Data::Dumper;
 use Exception::Simple;
 
-our %accessor_control;
-
 sub import{
     my $target = caller;
     my $class = shift;
     my $imports = {};
 
 #can we import strict and warnings into $target?
-
     if ( scalar( @_ ) ){
         foreach my $import ( @_ ){
-            $imports->{ $import } = 1;
-#shorten this, so it does import_$import($target) and does both in else, check for proper values
+            if ( ( $import ne 'has' ) && ( $import ne 'new' ) ){
+                Exception::Simple->throw('invalid import option');
+            }
+            _import_$import( $target );
         }
     } else {
-        $imports->{'new'} = 1;
-        $imports->{'has'} = 1;
-    }
-
-    $accessor_control{ $target } = {};
-
-    if ( $imports->{'has'} ){
         _import_has( $target );
-    }
-    if ( $imports->{'new'} ){
         _import_new( $target );
     }
+
+    strict->import;
+    warnings->import;
 }
 
 sub _import_new{
@@ -46,12 +39,8 @@ sub _import_new{
             my $self = {};
             bless( $self, $class );
 
-#do things with args 
-     # set accessor values (including init_arg)
-     # check required
-     # other?
-            foreach my $key ( keys( %{$accessor_control{ $target }} ) ){
-                my $accessor = $accessor_control{ $target }->{ $key };
+            foreach my $key ( keys( %{_get_control( $target )} ) ){
+                my $accessor = _get_control( $target )->{ $key };
     
                 if ( 
                     $accessor->{'required'}
@@ -61,7 +50,10 @@ sub _import_new{
                 }
 
                 my $value;
-                if ( exists( $args->{ $accessor->{'init_arg'} } ) ){
+                if ( 
+                    exists( $accessor->{'init_arg'} ) 
+                    && exists( $args->{ $accessor->{'init_arg'} } ) 
+                ){
                     $value = $args->{ $accessor->{'init_arg'} };
                 } elsif( exists( $accessor->{'default'} ) ) {
                     $value = $accessor->{'default'}->();
@@ -69,12 +61,26 @@ sub _import_new{
 
                 #set value, ensuring custom setter is used
                 my $name = $accessor->{'name'};
-
+                
+                _get_control( $target )->{ $name }->{'_init'} = 1;
                 $self->$name( $value );
+                delete _get_control( $target )->{ $name }->{'_init'};
             }
             
             return $self;
         };
+    }
+}
+
+sub _get_control{
+    my $target = shift;
+    {
+        no strict 'refs';
+
+        ${"${target}\::"}{'_accessor_control'} ||= {};
+        my $control = ${"${target}\::"}{'_accessor_control'};
+        
+        return $control;
     }
 }
 
@@ -109,7 +115,7 @@ sub _import_has{
             }
 
             $args{'name'} = $name;
-            $accessor_control{ $target }->{ $name } = \%args;
+            _get_control( $target )->{ $name } = \%args;
 
             _mk_accessor( $target, \%args );
         };
@@ -126,16 +132,15 @@ sub _mk_accessor{
 
     my $accessor = sub {
         my ( $self, $value ) = @_;
-
         if ( 
             $value 
-            && !$args->{'init'} #this doesnt work!!!
+            && !_get_control( $target )->{ $name }->{'_init'}
             && ( $args->{'is'} eq 'ro' )
         ){
-            Exception::Simple->throw("accessor $args->{'name'} is readonly");
+            Exception::Simple->throw("accessor ${name} is readonly");
         }
     
-        if ( $value ){
+        if ( defined( $value ) ){
             $setter->( $self, $value );
         }
 

@@ -59,6 +59,15 @@ throws_ok( sub{ require AccessorSimpleTest::InvalidIs }, qr/'foo => is' invalid/
     is( $custom_init_arg->accessor_for_custom, 'foo', 'custom init arg works');
 }
 
+{
+    no strict;
+    use AccessorSimpleTest::Strict;
+    my $foo = AccessorSimpleTest::Strict;
+    throws_ok( sub { $foo->strict_error }, qr/Can't use string \("bar"\) as a SCALAR ref while "strict refs"/, 'strict is imported' );
+}
+
+done_testing;
+
 #check all things
  # required custom init arg
  # builder works ( custom getter/setter? )
@@ -66,6 +75,7 @@ throws_ok( sub{ require AccessorSimpleTest::InvalidIs }, qr/'foo => is' invalid/
  # selective import works
  # check that if two objects of the same class are instanciated, that they can hold differnt data (that the data is in the obect and not the namespace)
  # on demand use of has, i.e. in random sub somewhere
- # strict and warnings are imported into target
  # custom setter/getter
+ # clearer...
+ # invalid import option
  # other?
