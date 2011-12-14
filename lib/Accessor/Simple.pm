@@ -8,10 +8,10 @@ use Exception::Simple;
 sub import{
     my $target = caller;
     my ( $class, $no_new ) = @_;
+    $no_new ||= 0; #find out why this has to be done this way and not just a defined check
 
-#can we import strict and warnings into $target?
     _import_has( $target );
-    _import_new( $target ) if ( $no_new ne 'no_new' );
+    _import_new( $target ) if ( defined($no_new) && ( $no_new ne 'no_new' ) );
 
     strict->import;
     warnings->import;

@@ -1,7 +1,4 @@
 package AccessorSimpleTest::InvalidDefault;
-use strict;
-use warnings;
-
 use Accessor::Simple;
 
 has 'foo' => (

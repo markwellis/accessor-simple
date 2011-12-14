@@ -1,7 +1,4 @@
 package AccessorSimpleTest::Ro;
-use strict;
-use warnings;
-
 use Accessor::Simple;
 
 has 'foo' => (
