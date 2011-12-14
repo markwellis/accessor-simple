@@ -10,23 +10,29 @@ use Test::More;
 use Test::Exception;
 
 #test classes
-use AccessorSimpleTest::NewInjected; 
-new_ok('AccessorSimpleTest::NewInjected');
+{
+    use AccessorSimpleTest::NewInjected; 
+    new_ok('AccessorSimpleTest::NewInjected');
+}
 
-use AccessorSimpleTest::RequiredInitArg; 
-throws_ok( sub{ AccessorSimpleTest::RequiredInitArg->new }, 'Exception::Simple', 'arg is required');
+{
+    use AccessorSimpleTest::RequiredInitArg; 
+    throws_ok( sub{ AccessorSimpleTest::RequiredInitArg->new }, qr/arg is required/, 'arg is required');
+}
 
-#there are a compile time errors, which is why they're like this
-throws_ok( sub{ require AccessorSimpleTest::InvalidDefault }, qr/'foo => default' is not a coderef/);
-throws_ok( sub{ require AccessorSimpleTest::NoIs }, qr/'foo => is' not provided/);
-throws_ok( sub{ require AccessorSimpleTest::InvalidIs }, qr/'foo => is' invalid/);
+{
+    #there are a compile time errors, which is why they're like this
+    throws_ok( sub{ require AccessorSimpleTest::InvalidDefault }, qr/'foo => default' is not a coderef/);
+    throws_ok( sub{ require AccessorSimpleTest::NoIs }, qr/'foo => is' not provided/);
+    throws_ok( sub{ require AccessorSimpleTest::InvalidIs }, qr/'foo => is' invalid/);
+}
 
 {
     use AccessorSimpleTest::Ro;
 
     my $ro = new_ok('AccessorSimpleTest::Ro');
     is( $ro->foo, 'this is unchangable', 'default ro accessor value is set');
-    throws_ok( sub { $ro->foo( 1 ) }, 'Exception::Simple', 'accessor foo is readonly' );
+    throws_ok( sub { $ro->foo( 1 ) }, qr/accessor foo is readonly/, 'accessor foo is readonly' );
     is( $ro->foo, 'this is unchangable', "foo hasn't been changed");
 
     $ro = new_ok('AccessorSimpleTest::Ro', [{
@@ -52,6 +58,18 @@ throws_ok( sub{ require AccessorSimpleTest::InvalidIs }, qr/'foo => is' invalid/
 }
 
 {
+    use AccessorSimpleTest::Rw;
+
+    my $foo = new_ok('AccessorSimpleTest::Rw', [{
+        'foo' => 1,
+    }]);
+    my $bar = new_ok('AccessorSimpleTest::Rw', [{
+        'foo' => 2,
+    }]);
+    isnt( $foo->foo, $bar->foo, '2 objects of the same class hold different data');
+}
+
+{
     use AccessorSimpleTest::CustomInitArg;
     my $custom_init_arg = new_ok('AccessorSimpleTest::CustomInitArg', [{
         'custom' => 'foo',
@@ -66,16 +84,26 @@ throws_ok( sub{ require AccessorSimpleTest::InvalidIs }, qr/'foo => is' invalid/
     throws_ok( sub { $foo->strict_error }, qr/Can't use string \("bar"\) as a SCALAR ref while "strict refs"/, 'strict is imported' );
 }
 
+{
+    use AccessorSimpleTest::RequiredCustomInitArg;
+    throws_ok( sub{ AccessorSimpleTest::RequiredCustomInitArg->new }, qr/custom is required/, 'arg is required');
+}
+
+{
+    use AccessorSimpleTest::NoNew;
+    throws_ok( sub{ AccessorSimpleTest::NoNew->new }, qr/Can't locate object method "new" via package "AccessorSimpleTest::NoNew"/, 'no new' );
+}
+
+{
+    use AccessorSimpleTest::CustomNew;
+    throws_ok( sub{ AccessorSimpleTest::CustomNew->new }, qr/custom new/, 'custom new' );
+}
+
 done_testing;
 
 #check all things
- # required custom init arg
- # builder works ( custom getter/setter? )
  # sub BUILD (others?) works
- # selective import works
- # check that if two objects of the same class are instanciated, that they can hold differnt data (that the data is in the obect and not the namespace)
- # on demand use of has, i.e. in random sub somewhere
+ # on demand use of has, i.e. in random sub somewhere ( + on 2 objects of the same class, see if the methods transfer across objects)
  # custom setter/getter
  # clearer...
- # invalid import option
  # other?

@@ -7,21 +7,13 @@ use Exception::Simple;
 
 sub import{
     my $target = caller;
-    my $class = shift;
-    my $imports = {};
+    my ( $class, $no_new ) = @_;
+
+    $no_new = undef if ( $no_new && ( $no_new ne 'no_new' ) );
 
 #can we import strict and warnings into $target?
-    if ( scalar( @_ ) ){
-        foreach my $import ( @_ ){
-            if ( ( $import ne 'has' ) && ( $import ne 'new' ) ){
-                Exception::Simple->throw('invalid import option');
-            }
-            _import_$import( $target );
-        }
-    } else {
-        _import_has( $target );
-        _import_new( $target );
-    }
+    _import_has( $target );
+    _import_new( $target ) if ( !$no_new );
 
     strict->import;
     warnings->import;
@@ -46,7 +38,7 @@ sub _import_new{
                     $accessor->{'required'}
                     && !defined( $args->{ $accessor->{'init_arg'} } ) 
                 ){
-                    Exception::Simple->throw("$accessor->{'name'} is required");
+                    Exception::Simple->throw("@{[ ( $accessor->{'init_arg'} || $accessor->{'name'} ) ]} is required");
                 }
 
                 my $value;
@@ -134,8 +126,8 @@ sub _mk_accessor{
         my ( $self, $value ) = @_;
         if ( 
             $value 
-            && !_get_control( $target )->{ $name }->{'_init'}
             && ( $args->{'is'} eq 'ro' )
+            && !_get_control( $target )->{ $name }->{'_init'}
         ){
             Exception::Simple->throw("accessor ${name} is readonly");
         }
