@@ -101,10 +101,14 @@ use Test::Exception;
 
 done_testing;
 
-#check all things
- # sub BUILD (others?) works
+#TODO tests
+ # BUILD, BUILDARGS works
  # on demand use of has, i.e. in random sub somewhere ( + on 2 objects of the same class, see if the methods transfer across objects)
+
+#TODO module side
  # custom setter/getter
  # clearer...
  # unimport
- # other?
+
+#TODO other
+ # benchmark Moose, Moo, Class::Accessor, Accessor::Simple (fingers crossed)

@@ -29,6 +29,14 @@ sub _import_new{
             my $self = {};
             bless( $self, $class );
 
+            if ( $self->can('BUILDARGS') ){
+                my $newargs = $self->BUILDARGS( $args );
+                if ( ref( $newargs ) ne 'HASH' ){
+                    Exception::Simple->throw("BUILDARGS didn't return a hashref");
+                }
+                $args = $newargs;
+            }
+
             foreach my $key ( keys( %{_get_control( $target )} ) ){
                 my $accessor = _get_control( $target )->{ $key };
     
@@ -56,7 +64,11 @@ sub _import_new{
                 $self->$name( $value );
                 delete _get_control( $target )->{ $name }->{'_init'};
             }
-            
+
+            if ( $self->can('BUILD') ){
+                $self->BUILD;
+            }
+
             return $self;
         };
     }
