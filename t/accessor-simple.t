@@ -95,20 +95,49 @@ use Test::Exception;
 }
 
 {
-    use AccessorSimpleTest::CustomNew;
-    throws_ok( sub{ AccessorSimpleTest::CustomNew->new }, qr/custom new/, 'custom new' );
+    use AccessorSimpleTest::BuildArgs;
+    my $foo = new_ok('AccessorSimpleTest::BuildArgs', [ [1, 2] ] );
+
+    is( $foo->harry, 1, 'harry is set' );
+    is( $foo->jen, 2, 'jen is set' );
+}
+
+{
+    use AccessorSimpleTest::Build;
+
+    new_ok('AccessorSimpleTest::Build', [ {
+        'country' => 'usa',
+    } ] );
+
+    throws_ok( sub{ AccessorSimpleTest::Build->new( { 'country' => 'uk' } ) }, qr/must have ni_number if from the uk/, 'dies because of no ni_number' );
+
+    new_ok('AccessorSimpleTest::Build', [ {
+        'country' => 'uk',
+        'ni_number' => 12345678,
+    } ] );
+}
+
+{
+    use AccessorSimpleTest::DynamicHas;
+    my $test = new_ok('AccessorSimpleTest::DynamicHas');
+    $test->make_accessor('test', 'value');
+
+    is( $test->test, 'value', 'dynamic use of has without interferance' );
 }
 
 done_testing;
 
 #TODO tests
- # BUILD, BUILDARGS works
  # on demand use of has, i.e. in random sub somewhere ( + on 2 objects of the same class, see if the methods transfer across objects)
 
 #TODO module side
+ # accessor validator? (fix buildargs test to use validator)
  # custom setter/getter
  # clearer...
  # unimport
+ # has_ accessor?
+ # clear_ accessor
+ # lazy...
 
 #TODO other
  # benchmark Moose, Moo, Class::Accessor, Accessor::Simple (fingers crossed)
