@@ -23,7 +23,7 @@ sub _get_control{
     my $target = shift;
 
     if ( ref( $target ) ){
-        return $target->{'_accessor_control'};
+        return $target->{'__accessor_control'};
     } else {
         no strict 'refs';
 
@@ -35,64 +35,51 @@ sub _get_control{
 sub _import_new{
     my $target = shift;
 
-    {
-        no strict 'refs';
-        *{"${target}::new"} = \&_client_new;
-    }
-}
+    my $new = sub{
+        my ( $invocant, $args ) = @_;
+        my $class = ref( $invocant ) || $invocant;
 
-sub _client_new{
-    my ( $invocant, $args ) = @_;
-    my $class = ref( $invocant ) || $invocant;
+        my $self = {
+            '__accessor_control' => _get_control( $invocant ),
+        };
 
-    my $self = {
-        '_accessor_control' => _get_control( $invocant ),
+        bless( $self, $class );
+
+        if ( $self->can('BUILDARGS') ){
+            $args = $self->BUILDARGS( $args );
+            if ( ref( $args ) ne 'HASH' ){
+                Exception::Simple->throw("BUILDARGS didn't return a hashref");
+            }
+        }
+
+        foreach my $key ( keys( %{_get_control( $self )} ) ){
+            my $accessor = _get_control( $self )->{ $key };
+            delete( $accessor->{'is_set'} ) if ( exists( $accessor->{'is_set'}) );
+
+            if ( 
+                $accessor->{'required'}
+                && !exists( $args->{ $accessor->{'init_arg'} } ) 
+            ){
+                Exception::Simple->throw("@{[ ( $accessor->{'init_arg'} || $accessor->{'name'} ) ]} is required");
+            }
+            if ( exists( $args->{ $accessor->{'init_arg'} } ) ){
+                $accessor->{'init_value'} = $args->{ $accessor->{'init_arg'} }; 
+            }
+        }
+
+        if ( $self->can('BUILD') ){
+            $self->BUILD;
+        }
+
+        return $self;
     };
 
-    bless( $self, $class );
-
-    if ( $self->can('BUILDARGS') ){
-        my $newargs = $self->BUILDARGS( $args );
-        if ( ref( $newargs ) ne 'HASH' ){
-            Exception::Simple->throw("BUILDARGS didn't return a hashref");
-        }
-        $args = $newargs;
+    {
+        no strict 'refs';
+        *{"${target}::new"} = $new;
     }
-
-    foreach my $key ( keys( %{_get_control( $self )} ) ){
-        my $accessor = _get_control( $self )->{ $key };
-
-        if ( 
-            $accessor->{'required'}
-            && !defined( $args->{ $accessor->{'init_arg'} } ) 
-        ){
-            Exception::Simple->throw("@{[ ( $accessor->{'init_arg'} || $accessor->{'name'} ) ]} is required");
-        }
-
-        my $value;
-        if ( 
-            exists( $accessor->{'init_arg'} ) 
-            && exists( $args->{ $accessor->{'init_arg'} } ) 
-        ){
-            $value = $args->{ $accessor->{'init_arg'} };
-        } elsif( exists( $accessor->{'default'} ) ) {
-            $value = $accessor->{'default'}->();
-        }
-
-        #set value, ensuring custom setter is used
-        my $name = $accessor->{'name'};
-        
-        $self->$name( $value );
-    }
-
-    if ( $self->can('BUILD') ){
-        $self->BUILD;
-    }
-
-    return $self;
 }
 
-#im not sure this needs to be exported, is it not just available? investigate, look at Test::More or something that does similar
 sub _import_has{
     my $target = shift;
 
@@ -122,9 +109,10 @@ sub _import_has{
         }
 
         $args{'name'} = $name;
+
         _get_control( $target )->{ $name } = \%args;
 
-        _mk_accessor( $target, \%args );
+        _mk_accessor( $target, $name );
     };
 
     {
@@ -134,27 +122,35 @@ sub _import_has{
 }
 
 sub _mk_accessor{
-    my ( $target, $args ) = @_;
-
-    my $name = $args->{'name'};
+    my ( $target, $name ) = @_;
 
     my $accessor = sub {
         my ( $self, $value ) = @_;
-
-#check if unset
-# if unset set value
+        
+        my $control = _get_control( $self )->{ $name };
         if ( 
             $value 
-            && ( $args->{'is'} eq 'ro' )
+            && ( $control->{'is'} eq 'ro' )
         ){
             Exception::Simple->throw("accessor ${name} is readonly");
         }
-    
+
+#lazy
         if ( defined( $value ) ){
-            _get_control( $self )->{ $name }->{'value'} = $value;
+            $control->{'value'} = $value;
+            $control->{'is_set'} = 1 if !$control->{'is_set'};
+        } elsif ( !$control->{'is_set'} ){
+            if ( exists( $control->{'init_value'} ) ){
+                $control->{'value'} = $control->{'init_value'};
+            } elsif ( exists( $control->{'default'} ) ){
+                $control->{'value'} = $control->{'default'}->();
+            } else {
+                $control->{'value'} = undef;
+            }
+            $control->{'is_set'} = 1;
         }
 
-        return _get_control( $self )->{ $name }->{'value'};
+        return $control->{'value'};
     };
 
     {

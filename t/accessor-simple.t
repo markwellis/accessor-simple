@@ -122,7 +122,7 @@ use Test::Exception;
     my $test = new_ok('AccessorSimpleTest::DynamicHas');
     $test->make_accessor('test', 'value');
 
-    is( $test->test, 'value', 'dynamic use of has without interferance' );
+    is( $test->test, 'value', 'dynamic use of has' );
 }
 
 done_testing;
@@ -132,12 +132,12 @@ done_testing;
 
 #TODO module side
  # accessor validator? (fix buildargs test to use validator)
- # custom setter/getter
+ # safe accessor name checks 
+ # trigger
  # clearer...
  # unimport
  # has_ accessor?
  # clear_ accessor
- # lazy...
 
 #TODO other
  # benchmark Moose, Moo, Class::Accessor, Accessor::Simple (fingers crossed)
