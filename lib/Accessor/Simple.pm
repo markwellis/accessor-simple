@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use Exception::Simple;
+use Clone qw/clone/;
 use Data::Dumper;
 
 #add unimport
@@ -21,7 +22,7 @@ sub _get_control{
     my $target = shift;
 
     if ( ref( $target ) ){
-        return $target->{'__accessor_control'};
+        return $target->{'_accessor_control'};
     } else {
         no strict 'refs';
 
@@ -38,9 +39,7 @@ sub _import_new{
         my $class = ref( $invocant ) || $invocant;
 
         my $self = {
-            '__accessor_control' => {
-                %{_get_control( $class )},
-            },
+            '_accessor_control' => clone( _get_control( $class ) ),
         };
         bless( $self, $class );
         
@@ -108,9 +107,10 @@ sub _import_has{
             Exception::Simple->throw("'${name} => default' is not a coderef");
         }
 
+        $args{'name'} = $name;
         _get_control( $target )->{ $name } = \%args;
-
-        _mk_accessor( $target, $name );
+#pass argsin here coz when we dynamic use has, it doesn't get the control in package namespace, which is only for new checking required args...
+        _mk_accessor( $target, \%args );
     };
 
     {
@@ -120,15 +120,16 @@ sub _import_has{
 }
 
 sub _mk_accessor{
-    my ( $target, $name ) = @_;
+    my ( $target, $args ) = @_;
 
+    my $name = $args->{'name'};
     my $accessor = sub {
         my ( $self, $value ) = @_;
         
         my $control = _get_control( $self )->{ $name };
         if ( 
             $value 
-            && ( $control->{'is'} eq 'ro' )
+            && ( $args->{'is'} eq 'ro' )
         ){
             Exception::Simple->throw("accessor ${name} is readonly");
         }
@@ -139,8 +140,8 @@ sub _mk_accessor{
         } elsif ( !$control->{'is_set'} ){
             if ( exists( $control->{'init_value'} ) ){
                 $control->{'value'} = $control->{'init_value'};
-            } elsif ( exists( $control->{'default'} ) ){
-                $control->{'value'} = $control->{'default'}->();
+            } elsif ( exists( $args->{'default'} ) ){
+                $control->{'value'} = $args->{'default'}->();
             } else {
                 $control->{'value'} = undef;
             }
