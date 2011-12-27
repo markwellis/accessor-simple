@@ -8,8 +8,6 @@ use Data::Dumper;
 #add unimport
 sub import{
     my $target = caller;
-    my ( $class, $no_new ) = @_;
-
 #error if has and new exist, and arn't our own (subclasses)
 
     _import_has( $target );
@@ -40,11 +38,12 @@ sub _import_new{
         my $class = ref( $invocant ) || $invocant;
 
         my $self = {
-            '__accessor_control' => _get_control( $invocant ),
+            '__accessor_control' => {
+                %{_get_control( $class )},
+            },
         };
-
         bless( $self, $class );
-
+        
         if ( $self->can('BUILDARGS') ){
             $args = $self->BUILDARGS( $args );
             if ( ref( $args ) ne 'HASH' ){
@@ -52,15 +51,16 @@ sub _import_new{
             }
         }
 
-        foreach my $key ( keys( %{_get_control( $self )} ) ){
-            my $accessor = _get_control( $self )->{ $key };
-            delete( $accessor->{'is_set'} ) if ( exists( $accessor->{'is_set'}) );
+        my $control = _get_control( $self );
+        foreach my $name ( keys( %{$control} ) ){
+            my $accessor = $control->{ $name };
+            delete( $accessor->{'is_set'} ) if ( exists( $accessor->{'is_set'} ) );
 
             if ( 
                 $accessor->{'required'}
                 && !exists( $args->{ $accessor->{'init_arg'} } ) 
             ){
-                Exception::Simple->throw("@{[ ( $accessor->{'init_arg'} || $accessor->{'name'} ) ]} is required");
+                Exception::Simple->throw("@{[ ( $accessor->{'init_arg'} || $name ) ]} is required");
             }
             if ( exists( $args->{ $accessor->{'init_arg'} } ) ){
                 $accessor->{'init_value'} = $args->{ $accessor->{'init_arg'} }; 
@@ -108,8 +108,6 @@ sub _import_has{
             Exception::Simple->throw("'${name} => default' is not a coderef");
         }
 
-        $args{'name'} = $name;
-
         _get_control( $target )->{ $name } = \%args;
 
         _mk_accessor( $target, $name );
@@ -135,7 +133,6 @@ sub _mk_accessor{
             Exception::Simple->throw("accessor ${name} is readonly");
         }
 
-#lazy
         if ( defined( $value ) ){
             $control->{'value'} = $value;
             $control->{'is_set'} = 1 if !$control->{'is_set'};
