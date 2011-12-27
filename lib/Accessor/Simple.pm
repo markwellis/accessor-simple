@@ -53,7 +53,6 @@ sub _import_new{
         my $control = _get_control( $self );
         foreach my $name ( keys( %{$control} ) ){
             my $accessor = $control->{ $name };
-            delete( $accessor->{'is_set'} ) if ( exists( $accessor->{'is_set'} ) );
 
             if ( 
                 $accessor->{'required'}
@@ -108,8 +107,9 @@ sub _import_has{
         }
 
         $args{'name'} = $name;
+        #used by new
         _get_control( $target )->{ $name } = \%args;
-#pass argsin here coz when we dynamic use has, it doesn't get the control in package namespace, which is only for new checking required args...
+        
         _mk_accessor( $target, \%args );
     };
 
