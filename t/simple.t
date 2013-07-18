@@ -21,3 +21,5 @@ is( $foo->foo, 1, 'foo value correct' );
 is( $bar->foo, 2, 'bar value correct' );
 
 isnt( $foo->foo, $bar->foo, '2 objects of the same class hold different data');
+
+done_testing;

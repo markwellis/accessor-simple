@@ -1,5 +1,6 @@
 package AccessorSimpleTest::Build;
 use Accessor::Simple;
+use Exception::Simple;
 
 has 'country' => (
     'is' => 'ro',
