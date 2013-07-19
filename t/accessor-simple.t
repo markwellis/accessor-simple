@@ -125,6 +125,22 @@ use Test::Exception;
     is( $test->test, 'value', 'dynamic use of has' );
 }
 
+{
+    use AccessorSimpleTest::Rw;
+    my $foo = new_ok('AccessorSimpleTest::Rw', [{
+        'foo' => 1,
+    }]);
+
+    is( $foo->foo, 1, 'foo value correct' );
+    my $bar = new_ok('AccessorSimpleTest::Rw', [{
+        'foo' => 2,
+    }]);
+    is( $foo->foo, 1, 'foo value correct' );
+    is( $bar->foo, 2, 'bar value correct' );
+
+    isnt( $foo->foo, $bar->foo, '2 objects of the same class hold different data');
+}
+
 done_testing;
 
 #TODO tests

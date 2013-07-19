@@ -2,6 +2,9 @@ package Accessor::Simple;
 use strict;
 use warnings;
 
+our $VERSION = '0.001';
+$VERSION = eval $VERSION;
+
 use Exception::Simple;
 use Clone qw/clone/;
 
