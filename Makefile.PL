@@ -10,5 +10,11 @@ test_requires 'Test::Exception';
 test_requires 'Cwd';
 test_requires 'File::Basename';
 
+perl_version '5.008';
+
+resources(
+    'repository'  => 'https://github.com/n0body-/accessor-simple.git',
+);
+
 auto_install;
 WriteAll;
